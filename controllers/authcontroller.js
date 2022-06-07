@@ -21,6 +21,7 @@ router.post('/login', checkJwt, (req, res) => {
     try {
         const { email, password } = req.body;
         
+        //const usremail
 
 
     } catch (err) {
@@ -28,42 +29,36 @@ router.post('/login', checkJwt, (req, res) => {
     }
 });
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
     try {
-        const { userId, firstName, lastName, email,
-            mobileNumber, gender, address, country,
-            state, profileImage, city } = req.body;
+        bcrypt.hash(req.body.password, 10, (err, hash) =>{
+            if(err){
+                return res.status(500).json({
+                error:err    
+                })
+            }else{
+                const user = new User({
+                    _id:new mongoose.Types.ObjectId,
+                    email:req.body.email,
+                    password:hash,
+                    phone:req.body.phone,
+                    userType:req.body.userType,
+                    
+                })
 
-        const params = {
-            TableName: 'users',
-            Item: {
-                userId,
-                id: uuid(),
-                firstName,
-                lastName,
-                email,
-                mobileNumber,
-                gender,
-                address,
-                country,
-                state,
-                profileImage,
-                city,
-                createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
-                updatedDate: moment().format('YYYY-MM-DD HH:mm:ss'),
-                status: true,
-                isActive: true,
-                isChatActive: false
-            }
-        };
-        dbClient.put(params, (err, data) => {
-            if (err) {
-                return res.status(400).json(BaseResponse.sendError('Error', err));
-            } else {
-                return res.status(200).json(BaseResponse.sendSuccess('User added.'));
+                user.save()
+                .then(result =>{
+                    res.status(200).json({
+                        newUser : result
+                    })
+                })
+                .catch(err =>{
+                    res.status(500).json({
+                        error:err
+                    })
+                })
             }
         });
-
     } catch (err) {
         return res.status(ErrorMessage.badRequest.code).json(BaseResponse.sendError(ErrorMessage.badRequest.message, err));
     }
